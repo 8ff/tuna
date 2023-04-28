@@ -1,4 +1,5 @@
-# tuna 🐟
+# tuna
+![logo](media/tuna.svg)
 Simple yet functional self updater written in GO.
 
 ### Functionality
