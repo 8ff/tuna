@@ -10,6 +10,8 @@ import (
 	"os/exec"
 )
 
+const minSize = 10000 // Minimum acceptable size for the downloaded file
+
 func GetVersion(versionParam string) ([]byte, error) {
 	args := os.Args
 	out, err := exec.Command(args[0], versionParam).CombinedOutput()
@@ -20,12 +22,22 @@ func GetVersion(versionParam string) ([]byte, error) {
 }
 
 func SelfUpdate(url string) error {
-	args := os.Args
+	// get path to running executable
+	path, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	// download new version
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to download file: %s", resp.Status)
+	}
 
 	buf := new(bytes.Buffer)
 	size, err := io.Copy(buf, resp.Body)
@@ -33,16 +45,20 @@ func SelfUpdate(url string) error {
 		return err
 	}
 
-	if size < 10000 {
+	if size < minSize {
 		return errors.New("returned response too small")
 	}
 
-	originalFile, _ := os.Stat(args[0])
-	if err := os.Remove(args[0]); err != nil {
+	originalFile, err := os.Stat(path)
+	if err != nil {
 		return err
 	}
 
-	out, err := os.Create(args[0])
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+
+	out, err := os.Create(path)
 	if err != nil {
 		return err
 	}
@@ -52,7 +68,8 @@ func SelfUpdate(url string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.Chmod(args[0], originalFile.Mode().Perm()); err != nil {
+
+	if err := os.Chmod(path, originalFile.Mode().Perm()); err != nil {
 		return err
 	}
 
