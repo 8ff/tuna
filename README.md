@@ -14,7 +14,12 @@ import (
 )
 
 func main() {
-	e := tuna.SelfUpdate("https://example.com/releases/myApp")
+	// Determine OS and ARCH
+	osRelease := runtime.GOOS
+	arch := runtime.GOARCH
+
+	// Build URL
+	e := tuna.SelfUpdate(fmt.Sprintf("https://github.com/myuser/myapp/releases/download/latest/myapp.%s.%s", osRelease, arch))
 	if e != nil {
 		log.Fatal(e.Error())
 	} else {
